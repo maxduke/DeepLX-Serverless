@@ -41,6 +41,8 @@ const app = express(),
     preflightContinue: false
   };
 
+const AUTH_KEY = process.env.AUTH_KEY;
+
 app.use(cors(CORS));
 app.use(bodyParser.json());
 
@@ -49,6 +51,19 @@ app.get('/', async (req, res) => await get(req, res));
 
 async function post(req, res) {
   const startTime = Date.now();
+
+  // 如果 AUTH_KEY 已设置，则进行验证
+  if (AUTH_KEY) {
+    const clientKey = req.query.key;
+    if (clientKey !== AUTH_KEY) {
+      const duration = Date.now() - startTime;
+      console.log(`[LOG] ${new Date().toISOString()} | POST "translate" | 403 | Invalid authKey | ${duration}ms`);
+      return res.status(403).json({
+        code: 403,
+        message: "Forbidden: Invalid authKey"
+      });
+    }
+  }
 
   let { text, source_lang, target_lang, alt_count } = req.body;
   source_lang = source_lang.toUpperCase();
@@ -127,7 +142,7 @@ async function post(req, res) {
 async function get(req, res) {
   res.json({
     code: 200,
-    message: "Welcome to the DeepL Free API. Please POST to '/translate'. Visit 'https://github.com/guobao2333/DeepLX-Serverless' for more information."
+    message: "This is an internal service."
   });
 };
 
