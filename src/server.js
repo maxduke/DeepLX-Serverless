@@ -87,7 +87,6 @@ async function post(req, res) {
       code: 405,
       message: "Alternative Translate Not Allowed"
     });
-    // alt_count = 0;
   }
 
   try {
@@ -98,10 +97,19 @@ async function post(req, res) {
     return decompressedData;
   });*/
 
-    const duration = Date.now() - startTime; // 计算处理时间
+    let duration = Date.now() - startTime;
+    if(result.code === 429) {
+      console.error(`[WARN] ${new Date().toISOString()} | POST "translate" | 429 | ${result.message} | ${duration}ms`);
+      res.status(429).json({
+        code: 429,
+        message: result.message
+      });
+    }
+    
+    duration = Date.now() - startTime;
     // console.log(result);
-    if(result == "") {
-      console.error(`[ERROR] ${new Date().toISOString()} | POST "translate" | 500 | ${error.message} | ${duration}ms`);
+    if(result == "" || result.data == "") {
+      console.error(`[ERROR] ${new Date().toISOString()} | POST "translate" | 500 | ${result.message} | ${duration}ms`);
       res.status(500).json({
         code: 500,
         message: "Translation failed",
@@ -111,7 +119,7 @@ async function post(req, res) {
     console.log(`[LOG] ${new Date().toISOString()} | POST "translate" | 200 | ${duration}ms`);
 
     const responseData = {
-      code: 200,
+      code: result.code,
       id: result.id,
       data: result.data, // 取第一个翻译结果
       method: "Free",
@@ -131,16 +139,15 @@ async function post(req, res) {
 
   } catch (err) {
     console.error(err, err.stack);
-    return res.status(500).json({
+    res.status(500).json({
       code: 500,
-      message: "Translation failed",
-      error: err.message
+      message: err.message
     });
   }
 };
 
 async function get(req, res) {
-  res.json({
+  res.status(200).json({
     code: 200,
     message: "This is an internal service."
   });
